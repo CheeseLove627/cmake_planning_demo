@@ -53,6 +53,53 @@ cd bin
 ./planning_main
 ```
 
+## 作为 SDK 导出（供二次开发）
+
+本工程会安装并导出两个动态库目标：
+
+- `planning::pnc_map`
+- `planning::process`（PUBLIC 依赖 `planning::pnc_map`）
+
+### 安装
+
+在构建完成后执行安装（将头文件、动态库、CMake 包文件安装到 prefix）：
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+cmake --install build --prefix <install_prefix>
+```
+
+安装后常见布局：
+
+- `<install_prefix>/include/`：头文件（如 `process.h`、`pnc_map.h`）
+- `<install_prefix>/lib/`：`.dylib/.so` 或 Windows 的 import lib `.lib`
+- `<install_prefix>/bin/`：可执行文件与 Windows 的 `.dll`
+- `<install_prefix>/lib/cmake/planning/`：`planningConfig.cmake`、`planningTargets.cmake`
+
+### 第三方工程如何使用
+
+第三方工程的 `CMakeLists.txt` 示例：
+
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(consumer LANGUAGES CXX)
+
+find_package(planning REQUIRED)
+
+add_executable(consumer_app main.cpp)
+target_link_libraries(consumer_app PRIVATE planning::process)
+```
+
+配置时告诉 CMake 去哪里找包：
+
+```bash
+cmake -S . -B build -DCMAKE_PREFIX_PATH=<install_prefix>
+cmake --build build -j
+```
+
+> Windows/MSVC：运行时需要 `process.dll`、`pnc_map.dll` 与你的 exe 在同一目录（或加入 `PATH`）。
+
 ## 关于 `PUBLIC` / `PRIVATE` / `INTERFACE`
 
 - `PRIVATE`：仅当前 target 编译时使用；不会传递给依赖它的 target
